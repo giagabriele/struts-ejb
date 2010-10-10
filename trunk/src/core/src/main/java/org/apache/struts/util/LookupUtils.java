@@ -16,9 +16,12 @@
  */
 package org.apache.struts.util;
 
+import javax.ejb.EJB;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 
 /**
@@ -26,13 +29,27 @@ import javax.naming.NamingException;
  * @author Giacomo Stefamo Gabriele
  */
 public class LookupUtils {
-    
+    /**
+     * <p>Commons Logging instance.</p>
+     */
+    protected static final Log log = LogFactory.getLog(InjectionUtils.class);
+
     public static Object lookup(String jndiName) throws NamingException {
+        log.info("JnDiName [ "+jndiName+" ]");
         Context context = new InitialContext();
         return context.lookup(jndiName);
     }
-
+    /**
+     * Called when server is glassfish
+     * @param clazz
+     * @return
+     * @throws NamingException
+     */
      public static Object lookup(Class clazz) throws NamingException {
-       return lookup(clazz.getSimpleName());
-    }
+       return lookup(clazz.getName());
+     }
+     
+     public static Object lookup(EJB ejb) throws NamingException{
+         return lookup(ejb.beanName());
+     }
 }

@@ -23,6 +23,7 @@ import javax.ejb.EJB;
 import javax.naming.NamingException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.struts.action.Action;
 import org.apache.struts.exceptions.InjectionException;
 import org.apache.struts.exceptions.LookupException;
 
@@ -36,12 +37,21 @@ public class InjectionUtils {
      */
     protected static final Log log = LogFactory.getLog(InjectionUtils.class);
 
-    public static void injection(Object action, Map<Field, EJB> map) throws InjectionException {
+    public static void injection(Action action) throws InjectionException {
         try{
-            for (Field field : map.keySet()) {
-                Class clazz = field.getType();
-                Object value = LookupUtils.lookup(clazz);
-                injection(action, field,value);
+            for (Field field :action.getClass().getDeclaredFields()) {
+                EJB ejb = field.getAnnotation(EJB.class);
+                if(ejb != null){
+                    if(ejb.mappedName()!=null && !ejb.mappedName().equals("")){
+                         Object value = LookupUtils.lookup(ejb.mappedName());
+                         injection(action, field,value);
+
+                    }else{
+                        Class clazz = field.getType();
+                        Object value = LookupUtils.lookup(clazz);
+                        injection(action, field,value);
+                    }
+                }
             }
         } catch (InjectionException ex) {
             throw ex;
@@ -49,11 +59,12 @@ public class InjectionUtils {
             throw new LookupException(e);
         }
     }
-
     protected static void injection(Object action, Field field, Object value) throws InjectionException {
         try {
-            Method metodoSET = action.getClass().getMethod(getNameMethodSET(field.getName()), field.getType());
-            metodoSET.invoke(action, value);
+            field.setAccessible(true);
+            field.set(action, value);
+//            Method metodoSET = action.getClass().getMethod(getNameMethodSET(field.getName()), field.getType());
+//            metodoSET.invoke(action, value);
         } catch (Exception e) {
             throw new InjectionException(e);
         }
